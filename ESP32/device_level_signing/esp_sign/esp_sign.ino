@@ -46,6 +46,28 @@ void reconnectMQTT(); // Forward declaration
 
 void setup() {
   DEBUG_BEGIN(115200);
+  Serial.begin(115200);
+  while (!Serial) { delay(10); } // Wait for Serial Monitor to open
+  
+  delay(2000); // Extra buffer for the Omen 15 to sync the port
+  Serial.println("\n--- START OF LOG ---");
+  Serial.println("### ESP32 System Environment ###");
+  
+  // Hardware Architecture Details
+  Serial.print("Chip Model: "); Serial.println(ESP.getChipModel());
+  Serial.print("Chip Revision: "); Serial.println(ESP.getChipRevision());
+  Serial.print("CPU Frequency: "); Serial.print(ESP.getCpuFreqMHz()); Serial.println(" MHz");
+  
+  // Flash and Memory (Benchmarking Metrics)
+  Serial.print("Flash Size: "); Serial.print(ESP.getFlashChipSize() / (1024 * 1024)); Serial.println(" MB");
+  Serial.print("Flash Speed: "); Serial.print(ESP.getFlashChipSpeed() / 1000000); Serial.println(" MHz");
+  
+  // Background/Idle State Metrics
+  Serial.print("Free Heap: "); Serial.print(ESP.getFreeHeap()); Serial.println(" bytes");
+  Serial.print("SDK Version: "); Serial.println(ESP.getSdkVersion());
+  
+  Serial.println("#################################");
+
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) { delay(500); }
 
