@@ -14,8 +14,17 @@ TOPIC = "light"
 MAX_LOGS = 5000 
 
 # File Setup
+# --- FILE SETUP ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
-log_file_path = os.path.join(current_dir, "benchmark_pi_results.csv")
+base_filename = "benchmark_pi_results"
+extension = ".csv"
+counter = 1
+
+# Increment counter until we find a filename that doesn't exist
+while os.path.exists(os.path.join(current_dir, f"{base_filename}_{counter}{extension}")):
+    counter += 1
+
+log_file_path = os.path.join(current_dir, f"{base_filename}_{counter}{extension}")
 
 results_buffer = []
 failures = 0

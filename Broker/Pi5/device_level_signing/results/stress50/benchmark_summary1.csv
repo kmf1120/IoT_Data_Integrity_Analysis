@@ -1,0 +1,2 @@
+Timestamp,Video_File,Total_Chunks,Avg_Sign_uS,Max_Sign_uS,Avg_Verify_uS,Max_Verify_uS
+2026-02-07 16:01:24,final_signed_stream_1.h264,4377,149.95,7629,282.89,10570.00

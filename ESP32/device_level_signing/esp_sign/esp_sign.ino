@@ -5,7 +5,7 @@
 #include <Adafruit_BME280.h>
 #include <wifi_secrets.h>
 
-#define DEBUG 0 // Set to 0 for the actual 10k benchmark to ensure max speed
+#define DEBUG 0 
 
 #if DEBUG
   #define DEBUG_BEGIN(x) Serial.begin(x)
@@ -17,21 +17,22 @@
   #define DEBUG_PRINTLN(x)
 #endif
 
-// put this all in a config header
+// --- STRESS CONFIG ---
+#define STRESS_ENABLED 1  // Set to 0 to disable
+#define STRESS_CORE 0     // Core 0 handles WiFi, Core 1 handles Arduino loop
+
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PASS;
 const char* mqtt_server = "laptop.local"; 
 const int mqtt_port = 1883;
 const char* topic = "therm";
 
-// BME280 SPI Pins
 #define BME_SCK 18
 #define BME_MISO 19
 #define BME_MOSI 23
 #define BME_CS 5
 Adafruit_BME280 bme(BME_CS);
 
-// Ed25519
 #define ED25519_PRIVATE_KEY_SIZE 32
 #define ED25519_PUBLIC_KEY_SIZE 32
 #define ED25519_SIGNATURE_SIZE 64
@@ -42,30 +43,38 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 unsigned long lastPublish = 0;
 
-void reconnectMQTT(); // Forward declaration
+void reconnectMQTT(); 
+
+// --- STRESS TASK ---
+void stressTask(void * pvParameters) {
+    volatile float x = 1.5; 
+    while(true) {
+        for(int i = 0; i < 1000; i++) {
+            x = sqrt(x * 3.14159 / 2.71828);
+            if (x > 1000.0 || x < 0.1) x = 1.5;
+        }
+        vTaskDelay(1); // Prevents Watchdog Timer (WDT) reset
+    }
+}
 
 void setup() {
   DEBUG_BEGIN(115200);
   Serial.begin(115200);
-  while (!Serial) { delay(10); } // Wait for Serial Monitor to open
+  while (!Serial) { delay(10); } 
   
-  delay(2000); // Extra buffer for the Omen 15 to sync the port
+  delay(2000); 
   Serial.println("\n--- START OF LOG ---");
   Serial.println("### ESP32 System Environment ###");
   
-  // Hardware Architecture Details
   Serial.print("Chip Model: "); Serial.println(ESP.getChipModel());
   Serial.print("Chip Revision: "); Serial.println(ESP.getChipRevision());
   Serial.print("CPU Frequency: "); Serial.print(ESP.getCpuFreqMHz()); Serial.println(" MHz");
   
-  // Flash and Memory (Benchmarking Metrics)
   Serial.print("Flash Size: "); Serial.print(ESP.getFlashChipSize() / (1024 * 1024)); Serial.println(" MB");
   Serial.print("Flash Speed: "); Serial.print(ESP.getFlashChipSpeed() / 1000000); Serial.println(" MHz");
   
-  // Background/Idle State Metrics
   Serial.print("Free Heap: "); Serial.print(ESP.getFreeHeap()); Serial.println(" bytes");
   Serial.print("SDK Version: "); Serial.println(ESP.getSdkVersion());
-  
   Serial.println("#################################");
 
   WiFi.begin(ssid, password);
@@ -78,6 +87,12 @@ void setup() {
   Ed25519::derivePublicKey(publicKey, privateKey);
 
   client.setServer(mqtt_server, mqtt_port);
+
+  // --- START STRESSER ---
+  #if STRESS_ENABLED
+    xTaskCreatePinnedToCore(stressTask, "StressTask", 2048, NULL, 1, NULL, STRESS_CORE);
+    Serial.println("Background Stressor Started.");
+  #endif
 }
 
 void loop() {
@@ -86,7 +101,6 @@ void loop() {
   }
   client.loop();
 
-  // interval set to 10ms for rapid benchmarking
   if (millis() - lastPublish > 10) {
     lastPublish = millis();
 
@@ -99,12 +113,10 @@ void loop() {
 
     uint8_t signature[ED25519_SIGNATURE_SIZE];
 
-    // Benchmark the signing process
     uint32_t startMicros = micros();
     Ed25519::sign(signature, privateKey, publicKey, (const uint8_t*)msgBuffer, msgLen);
     uint32_t signTime = micros() - startMicros;
 
-    // Build Binary Payload: [msg][sig][pub][time]
     size_t payloadLen = msgLen + ED25519_SIGNATURE_SIZE + ED25519_PUBLIC_KEY_SIZE + sizeof(signTime);
     uint8_t payload[payloadLen];
 
