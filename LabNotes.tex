@@ -1,0 +1,543 @@
+\documentclass[11pt,letterpaper]{article}
+
+% ── Packages ──────────────────────────────────────────────────────────────────
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{adjustbox}
+\usepackage{pdflscape}
+\usepackage{enumitem}
+\usepackage{textcomp}          % \textmu
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{caption}
+
+% ── Hyperref setup ────────────────────────────────────────────────────────────
+\hypersetup{
+    colorlinks = true,
+    linkcolor  = blue!60!black,
+    urlcolor   = blue!60!black,
+    citecolor  = blue!60!black,
+    pdftitle   = {Senior Project Lab Notes},
+    pdfauthor  = {},
+}
+
+% ── Section formatting ────────────────────────────────────────────────────────
+\titleformat{\section}{\large\bfseries}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\itshape}{}{0em}{}
+
+% ── Header / Footer ───────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Senior Project --- Lab Notes}
+\lhead{\leftmark}
+\rfoot{Page \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Convenience macros ────────────────────────────────────────────────────────
+\newcommand{\us}{\textmu{}S}   % microseconds symbol
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\na}{\textit{N/A}}
+\newcommand{\dash}{---}
+
+% ── Column types ──────────────────────────────────────────────────────────────
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+\begin{center}
+    {\LARGE\bfseries Senior Project --- Lab Notes}\\[0.4em]
+    {\normalsize Last revised: March 1, 2026}
+\end{center}
+
+\tableofcontents
+\newpage
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{System Environment}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Broker / Verifier}
+
+\begin{tabular}{@{}L{5cm}L{9cm}@{}}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+OS Name            & Microsoft Windows 11 Home \\
+OS Version         & 10.0.26100 N/A Build 26100 \\
+OS Configuration   & Standalone Workstation \\
+OS Build Type      & Multiprocessor Free \\
+System Manufacturer & HP \\
+System Model       & OMEN by HP Laptop PC \\
+System Type        & x64-based PC \\
+Processor          & AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD \textasciitilde{}2900\,MHz \\
+BIOS Version       & AMI F.13, 3/4/2021 \\
+Total Physical Memory & 15,731\,MB \\
+Available Physical Memory & 6,761\,MB \\
+Virtual Memory Max & 19,827\,MB \\
+Network Card       & Intel\textsuperscript{\textregistered} Wi-Fi 6 AX200 160MHz \\
+\bottomrule
+\end{tabular}
+
+\subsection{Thermometer Device (ESP32)}
+
+\begin{tabular}{@{}L{5cm}L{9cm}@{}}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+Chip Model    & ESP32-D0WD-V3 \\
+Chip Revision & 301 \\
+CPU Frequency & 240\,MHz \\
+Flash Size    & 4\,MB \\
+Flash Speed   & 80\,MHz \\
+Free Heap     & 287,160 bytes \\
+SDK Version   & v5.5.1-931-g9bb7aa84fe \\
+\bottomrule
+\end{tabular}
+
+\subsection{Smart Lights Device (Pi 3B+)}
+
+\subsubsection{CPU}
+
+\begin{tabular}{@{}L{5cm}L{9cm}@{}}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+Architecture    & aarch64 \\
+CPU op-modes    & 32-bit, 64-bit \\
+Byte Order      & Little Endian \\
+CPU(s)          & 4 (on-line: 0--3) \\
+Vendor ID       & ARM \\
+Model name      & Cortex-A53 \\
+Threads per core & 1 \\
+Cores per cluster & 4 \\
+CPU scaling MHz & 43\% \\
+CPU max MHz     & 1400.0 \\
+CPU min MHz     & 600.0 \\
+BogoMIPS        & 38.40 \\
+Flags           & fp asimd evtstrm crc32 cpuid \\
+L1d cache       & 128\,KiB (4 instances) \\
+L1i cache       & 128\,KiB (4 instances) \\
+L2 cache        & 512\,KiB (1 instance) \\
+NUMA node(s)    & 1 (node0: CPU 0--3) \\
+\bottomrule
+\end{tabular}
+
+\subsubsection{Vulnerability Mitigations}
+
+All vulnerabilities listed as \textit{Not affected} with the following exception:
+\begin{itemize}[noitemsep]
+    \item Spectre v1: Mitigation; \code{\_\_user} pointer sanitization
+\end{itemize}
+
+\subsubsection{Kernel, Memory, and Storage}
+
+\begin{tabular}{@{}L{5cm}L{9cm}@{}}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+Kernel Version   & Linux pi3 6.12.47+rpt-rpi-v8 \#1 SMP PREEMPT Debian 1:6.12.47-1+rpt1 (2025-09-16) aarch64 \\
+Total Memory     & 906\,MiB \\
+Used Memory      & 149\,MiB \\
+Free Memory      & 662\,MiB \\
+Swap Total       & 905\,MiB \\
+Swap Used        & 0\,MiB \\
+Storage Name     & SC16G \\
+Storage Speed    & \code{0x0235844300000000} \\
+Available Storage & 11\,G of 15\,G (\code{/dev/mmcblk0p2}) \\
+Pi 3B+ Revision  & a020d4 \\
+\bottomrule
+\end{tabular}
+
+\subsubsection{Baseline Task Snapshot}
+
+\begin{verbatim}
+top - 22:25:01 up 41 min, 1 user, load average: 0.00, 0.00, 0.00
+Tasks: 143 total, 1 running, 142 sleeping, 0 stopped, 0 zombie
+%Cpu(s): 0.1 us, 0.2 sy, 0.0 ni, 99.8 id, 0.0 wa, 0.0 hi, 0.0 si, 0.0 st
+MiB Mem: 906.0 total, 659.5 free, 150.5 used, 152.3 buff/cache
+MiB Swap: 906.0 total, 906.0 free, 0.0 used, 755.6 avail
+\end{verbatim}
+
+\subsection{Camera Device (Pi 5)}
+
+\subsubsection{CPU}
+
+\begin{tabular}{@{}L{5cm}L{9cm}@{}}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+Architecture    & aarch64 \\
+CPU op-modes    & 32-bit, 64-bit \\
+Byte Order      & Little Endian \\
+CPU(s)          & 4 (on-line: 0--3) \\
+Vendor ID       & ARM \\
+Model name      & Cortex-A76 \\
+Threads per core & 1 \\
+Cores per cluster & 4 \\
+CPU scaling MHz & 62\% \\
+CPU max MHz     & 2400.0 \\
+CPU min MHz     & 1500.0 \\
+BogoMIPS        & 108.00 \\
+Flags           & fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp \ldots \\
+L1d cache       & 256\,KiB (4 instances) \\
+L1i cache       & 256\,KiB (4 instances) \\
+L2 cache        & 2\,MiB (4 instances) \\
+L3 cache        & 2\,MiB (1 instance) \\
+NUMA node(s)    & 8 (nodes 0--7, each: CPU 0--3) \\
+\bottomrule
+\end{tabular}
+
+\subsubsection{Vulnerability Mitigations}
+
+Most vulnerabilities listed as \textit{Not affected}. Active mitigations:
+\begin{itemize}[noitemsep]
+    \item Spec store bypass: Mitigation; Speculative Store Bypass disabled via prctl
+    \item Spectre v1: Mitigation; \code{\_\_user} pointer sanitization
+    \item Spectre v2: Mitigation; CSV2, BHB
+\end{itemize}
+
+\subsubsection{Kernel, Memory, and Storage}
+
+\begin{tabular}{@{}L{5cm}L{9cm}@{}}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+Kernel Version   & Linux pi5 6.12.47+rpt-rpi-2712 \#1 SMP PREEMPT Debian 1:6.12.47-1+rpt1 (2025-09-16) aarch64 \\
+Total Memory     & 8,063\,MiB \\
+Used Memory      & 253\,MiB \\
+Free Memory      & 7,635\,MiB \\
+Swap Total       & 2,047\,MiB \\
+Swap Used        & 0\,MiB \\
+Storage Name     & SDABC \\
+Storage Speed    & \code{02b5800300000000} \\
+Available Storage & 8.8\,G of 14\,G (\code{/dev/mmcblk0p2}) \\
+Pi 5 Revision    & d04171 \\
+\bottomrule
+\end{tabular}
+
+\subsubsection{Baseline Task Snapshot}
+
+\begin{verbatim}
+top - 22:31:15 up 47 min, 1 user, load average: 0.00, 0.00, 0.00
+Tasks: 162 total, 1 running, 161 sleeping, 0 stopped, 0 zombie
+%Cpu(s): 0.0 us, 0.0 sy, 0.0 ni, 100.0 id, 0.0 wa, 0.0 hi, 0.0 si, 0.0 st
+MiB Mem: 8063.0 total, 7630.9 free, 257.2 used, 256.9 buff/cache
+MiB Swap: 2048.0 total, 2048.0 free, 0.0 used, 7805.8 avail
+\end{verbatim}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{MQTT Configuration}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\begin{tabular}{@{}L{5cm}L{9cm}@{}}
+\toprule
+\textbf{Device} & \textbf{Library} \\
+\midrule
+Thermometer (ESP32) & \code{PubSubClient.h} \\
+Smart Lights (Pi 3) & \code{paho.mqtt.client} \\
+Camera (Pi 5)       & \code{paho.mqtt.client} \\
+Broker / Verifier   & \code{paho.mqtt.client} \\
+\bottomrule
+\end{tabular}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Baseline Test Environment}
+% ══════════════════════════════════════════════════════════════════════════════
+
+With no configured background tasks running, baseline tests were conducted to
+measure latency on each IoT device.  This included:
+\begin{itemize}[noitemsep]
+    \item \textbf{Sign latency} --- the additional time required to perform an
+          Ed25519 signature calculation on-device.
+    \item \textbf{Verify latency} --- the additional time required by the broker
+          to perform Ed25519 signature verification (device-level signing
+          operations only).
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Device-Level Signing Results}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{ESP32 Thermometer (Broker Verification)}
+
+\textbf{Source:} \code{Broker/ESP32/device\_level\_signing/results/benchmark\_results.csv}\\
+\textbf{Total entries:} 10,000 \quad \textbf{Success rate:} 100.00\%
+
+\begin{tabular}{@{}L{6cm}R{4cm}@{}}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+Avg Sign Time (\us) & 46,319.87 \\
+Max Sign Time (\us) & 46,393.00 \\
+Avg Verify Time (\us) & 202.94 \\
+Max Verify Time (\us) & 981.80 \\
+\bottomrule
+\end{tabular}
+
+\subsection{Pi3 Smart Lights (Broker Verification)}
+
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}L{3cm}L{8.5cm}R{1.6cm}R{1.8cm}R{1.8cm}R{1.8cm}R{1.8cm}R{1.8cm}@{}}
+\toprule
+\textbf{Scenario} & \textbf{Source File} & \textbf{Entries} & \textbf{Success} &
+\textbf{Avg Sign} & \textbf{Max Sign} & \textbf{Avg Verify} & \textbf{Max Verify} \\
+ & & & & \multicolumn{4}{c}{(\us)} \\
+\midrule
+Early Dev Run &
+  \code{Broker/Pi3/device\_level\_signing/} \code{benchmark\_pi\_results\_1.csv} &
+  5,000 & 100.00\% & 99,192.21 & 194,199.00 & 36,497.29 & 56,841.50 \\
+No Stress &
+  \code{Broker/Pi3/device\_level\_signing/} \code{results/benchmark\_pi\_results.csv} &
+  5,000 & 100.00\% & 487.07 & 910.00 & 239.83 & 817.80 \\
+Stress 50 &
+  \code{Broker/Pi3/device\_level\_signing/} \code{results/benchmark\_pi\_results\_(stress-50).csv} &
+  5,000 & 100.00\% & 294.40 & 5,265.00 & 212.41 & 10,549.70 \\
+Stress 99 &
+  \code{Broker/Pi3/device\_level\_signing/} \code{results/benchmark\_pi\_results\_(stress-99).csv} &
+  5,000 & 100.00\% & 339.17 & 4,800.00 & 216.40 & 855.70 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+
+\textit{Note: The Early Dev Run file is located outside the \code{results/} subdirectory and predates
+the optimised implementation; sign times are approximately 200$\times$ higher than production runs.}
+
+\subsection{Pi5 Camera (Device-Level Signing Benchmark Summaries)}
+
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}L{2cm}L{7.5cm}L{3.5cm}R{1.5cm}R{1.5cm}R{1.5cm}R{1.5cm}R{1.8cm}R{1.8cm}@{}}
+\toprule
+\textbf{Scenario} & \textbf{Source File} & \textbf{Timestamp} &
+\textbf{Chunks} & \textbf{Success} &
+\textbf{Avg Sign} & \textbf{Max Sign} & \textbf{Avg Verify} & \textbf{Max Verify} \\
+ & & & & & \multicolumn{4}{c}{(\us)} \\
+\midrule
+No Stress &
+  \code{Broker/Pi5/device\_level\_signing/} \code{results/no~stress/benchmark\_summary.csv} &
+  2026-01-26 16:30:34 & 4,238 & \na & 165.53 & 3,465 & 309.94 & 913.70 \\
+Stress 25 &
+  \code{Broker/Pi5/device\_level\_signing/} \code{results/stress25/benchmark\_summary\_1.csv} &
+  2026-02-07 16:09:32 & 4,230 & 100.00\% & 139.97 & 5,161 & 293.77 & 5,067.70 \\
+Stress 50 &
+  \code{Broker/Pi5/device\_level\_signing/} \code{results/stress50/benchmark\_summary1.csv} &
+  2026-02-07 16:01:24 & 4,377 & \na & 149.95 & 7,629 & 282.89 & 10,570.00 \\
+Stress 75 &
+  \code{Broker/Pi5/device\_level\_signing/} \code{results/stress75/benchmark\_summary\_1.csv} &
+  2026-02-07 16:11:23 & 4,230 & 100.00\% & 158.46 & 5,565 & 292.48 & 1,257.90 \\
+Stress 99 &
+  \code{Broker/Pi5/device\_level\_signing/} \code{results/stress99/benchmark\_summary\_1.csv} &
+  2026-02-07 16:13:00 & 4,228 & 100.00\% & 173.04 & 7,376 & 286.30 & 1,385.70 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{IPFS Results}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\subsection{Pi5 IPFS Hash + Verify}
+
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}R{0.6cm}L{7.5cm}L{3.5cm}R{1.5cm}R{1.5cm}R{1.8cm}R{1.8cm}R{1.8cm}R{1.8cm}@{}}
+\toprule
+\textbf{Run} & \textbf{Source File} & \textbf{Timestamp} &
+\textbf{Chunks} & \textbf{Success} &
+\textbf{Avg Hash} & \textbf{Max Hash} & \textbf{Avg Verify} & \textbf{Max Verify} \\
+ & & & & & \multicolumn{4}{c}{(\us)} \\
+\midrule
+1 & \code{Broker/Pi5/IPFS/results/benchmark\_summary\_1.csv} & 2026-02-15 22:01:42 &
+  2,481 & 100.00\% & 19,855.99 & 32,443.00 & 36,607.57 & 49,253.40 \\
+2 & \code{Broker/Pi5/IPFS/results/benchmark\_summary\_2.csv} & 2026-02-15 22:09:16 &
+  2,692 & 100.00\% & 19,913.55 & 29,267.00 & 36,743.69 & 47,372.20 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+
+\subsection{ESP32 \texorpdfstring{$\rightarrow$}{->} Broker/Kubo IPFS Pipeline}
+
+Runs 1--2 predate the P50/P95/P99 schema; those cells are marked ``\dash''.
+
+\begin{landscape}
+\begin{adjustbox}{max width=\linewidth}
+\begin{tabular}{@{}R{0.5cm}
+                L{5.5cm}
+                L{3.2cm}
+                R{1.3cm}R{1.4cm}
+                R{1.5cm}R{1.4cm}
+                R{1.6cm}R{1.8cm}R{1.5cm}R{1.5cm}
+                R{1.6cm}R{1.8cm}R{1.5cm}R{1.5cm}@{}}
+\toprule
+\textbf{Run} & \textbf{Source File} & \textbf{Timestamp} &
+\textbf{Chunks} & \textbf{Success} &
+\multicolumn{2}{c}{\textbf{Device (\us)}} &
+\multicolumn{4}{c}{\textbf{Hash (\us)}} &
+\multicolumn{4}{c}{\textbf{Verify (\us)}} \\
+\cmidrule(lr){6-7}\cmidrule(lr){8-11}\cmidrule(lr){12-15}
+& & & & & \textbf{Avg} & \textbf{Max} &
+\textbf{Avg} & \textbf{Max} & \textbf{P50} & \textbf{P95} &
+\textbf{Avg} & \textbf{Max} & \textbf{P50} & \textbf{P95} \\
+\midrule
+1 & \code{Broker/ESP32/IPFS/results/} \code{benchmark\_summary\_1.csv} & 2026-03-01 19:43:00 &
+  52 & 100.00\% & 448.27 & 495 & 62,062.56 & 382,014.00 & \dash & \dash & 55,782.32 & 62,952.70 & \dash & \dash \\
+
+2 & \code{Broker/ESP32/IPFS/results/} \code{benchmark\_summary\_2.csv} & 2026-03-01 19:54:38 &
+  5,939 & 100.00\% & 449.05 & 568 & 56,378.79 & 293,549.80 & \dash & \dash & 56,580.27 & 716,918.90 & \dash & \dash \\
+
+3 & \code{Broker/ESP32/IPFS/results/} \code{benchmark\_summary\_3.csv} & 2026-03-01 20:33:49 &
+  772 & 76.94\% & 450.93 & 533 & 56,482.97 & 88,893.90 & 55,605.30 & 62,254.20 & 52,269.25 & 87,903.50 & 54,930.50 & 58,613.30 \\
+
+4 & \code{Broker/ESP32/IPFS/results/} \code{benchmark\_summary\_4.csv} & 2026-03-01 20:41:47 &
+  119 & 91.60\% & 448.18 & 516 & 216,208.58 & 1,137,796.30 & 60,431.80 & 597,412.50 & 245,431.04 & 1,618,677.20 & 60,155.50 & 618,591.90 \\
+
+5 & \code{Broker/ESP32/IPFS/results/} \code{benchmark\_summary\_5.csv} & 2026-03-01 20:54:20 &
+  5,029 & 100.00\% & 448.51 & 529 & 57,599.96 & 383,334.70 & 55,252.50 & 66,373.20 & 57,684.23 & 648,736.60 & 55,292.60 & 66,472.40 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{landscape}
+
+\subsection{IPFS Notes}
+
+\begin{itemize}[noitemsep]
+    \item Pi5 IPFS runs show stable hash/verify timing around \textasciitilde{}20\,ms /
+          \textasciitilde{}36\,ms.
+    \item ESP32 pipeline runs \#2 and \#5 provide long-duration datasets (5,939 and 5,029
+          chunks respectively); device-side prep remained near \textasciitilde{}449\,\us{}
+          across all runs while broker-side Kubo hash/verify dominated latency.
+    \item Run \#3 (76.94\% success rate) reflects packet loss at the MQTT ingress layer,
+          not a signing or hashing failure.
+    \item Run \#4 (119 chunks, 91.60\% success) shows extreme broker-side latency spikes
+          (Max Hash: 1,137,796\,\us{}; Max Verify: 1,618,677\,\us{}); P50 values
+          (\textasciitilde{}60\,ms) indicate these are outliers, not representative of
+          steady-state performance.
+    \item Runs \#3--\#5 include P50/P95/P99 percentile columns in the source CSVs;
+          runs \#1--\#2 predate that schema and report avg/max only.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{System Environment --- Confirmation Record}
+% ══════════════════════════════════════════════════════════════════════════════
+
+The system environment block in Section~1 is the canonical environment record for:
+
+\begin{itemize}[noitemsep]
+    \item Broker/Verifier (Windows 11 laptop)
+    \item Thermometer Device (ESP32)
+    \item Smart Lights Device (Pi 3)
+    \item Camera Device (Pi 5)
+\end{itemize}
+
+Additional ESP32 flash/run confirmation captured during the latest IPFS Arduino deployment:
+
+\begin{itemize}[noitemsep]
+    \item Board: \code{esp32:esp32:esp32}
+    \item Chip: ESP32-D0WD-V3 (revision v3.1)
+    \item Upload port: COM5
+    \item Flash/upload completed successfully via esptool.
+\end{itemize}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Special Consideration Notes}
+% ══════════════════════════════════════════════════════════════════════════════
+
+There is currently no mature, production-ready IPFS node implementation for ESP32
+that can run the full Kubo/libp2p stack (peer discovery, block exchange, datastore,
+and networking services) directly on-device.  This is primarily a hardware and
+software ecosystem limitation: ESP32 memory, storage, and CPU constraints are not
+well matched to full IPFS node requirements.
+
+Because of this, the ESP32 was used as a constrained edge publisher, and a
+broker/gateway host performed true IPFS operations using Kubo
+(\code{ipfs add -{}-only-hash}) on the received payload.  This preserves real IPFS
+CID generation while still allowing device-side timing and stress behaviour to be
+measured.
+
+\subsection*{Interpretation Notes for Results}
+
+\begin{itemize}[noitemsep]
+    \item ESP32 device timing reflects sensor read + payload construction + MQTT
+          publish overhead.
+    \item IPFS hash/verify timing reflects host-side Kubo and verifier execution,
+          not native ESP32 hashing.
+    \item End-to-end integrity remains valid because CIDs are generated and checked
+          by a real IPFS implementation.
+    \item This architecture should be reported as \textbf{ESP32 + IPFS gateway
+          orchestration}, not standalone ESP32-native IPFS.
+\end{itemize}
+
+\subsection*{Additional Benchmark Caveats}
+
+\begin{enumerate}
+
+\item \textbf{Workload mismatch across IPFS runs}
+
+  \textit{Concern:} ESP32 IPFS payloads are fixed at 25 bytes, while Pi5 IPFS
+  chunks are mostly \textasciitilde{}4\,KB.  Direct latency comparisons are
+  therefore not apples-to-apples.
+
+  \textit{Applies to:} Cross-platform IPFS comparison (ESP32 IPFS pipeline
+  vs.\ Pi5 IPFS pipeline), not within-run comparisons on the same device.
+
+  \textit{Evidence:} \code{Broker/ESP32/IPFS/results/raw\_packet\_data\_2.csv}
+  and \code{Broker/Pi5/IPFS/results/raw\_packet\_data\_2.csv}.
+
+\item \textbf{Outlier sensitivity in ESP32 IPFS hash/verify time}
+
+  \textit{Concern:} ESP32 IPFS run data has extreme max latency spikes
+  (run \#2 Max Verify: 716,918.9\,\us{}; run \#4 Max Hash: 1,137,796.3\,\us{},
+  Max Verify: 1,618,677.2\,\us{}; run \#5 Max Verify: 648,736.6\,\us{}),
+  so averages alone are highly misleading.
+
+  \textit{Applies to:} ESP32 IPFS benchmark interpretation and any summary
+  table that uses only avg/max metrics.
+
+  \textit{Recommendation:} Use P50/P95 as the primary performance indicators;
+  report avg/max as supplementary range data only.
+
+  \textit{Evidence:} \code{Broker/ESP32/IPFS/results/benchmark\_summary\_2.csv},
+  \code{benchmark\_summary\_4.csv}, \code{benchmark\_summary\_5.csv}.
+
+\item \textbf{Double-hash measurement effect}
+
+  \textit{Concern:} In default validation mode (\code{double\_hash}),
+  \code{broker\_ipfs.py} computes CID once for publish and a second time for
+  verification, which increases host compute cost versus a single-pass pipeline.
+
+  \textit{Applies to:} ESP32 $\rightarrow$ broker/Kubo IPFS pipeline only
+  (the host running \code{Broker/ESP32/IPFS/broker\_ipfs.py}), not the ESP32
+  microcontroller itself.
+
+  \textit{Note:} This can be switched to \code{single\_hash} mode when
+  throughput-focused benchmarking is needed.
+
+  \textit{Evidence:} \code{Broker/ESP32/IPFS/broker\_ipfs.py}.
+
+\item \textbf{MQTT reliability mode (mixed QoS path)}
+
+  \textit{Concern:} The ESP32 sender path uses QoS~0 (possible packet loss
+  without retransmit), while broker republish uses QoS~1; the reported success
+  rate reflects received/validated packets, not guaranteed delivery of all
+  packets generated at device origin.
+
+  \textit{Applies to:} ESP32 $\rightarrow$ broker ingress reliability
+  interpretation and end-to-end delivery claims.
+
+  \textit{Evidence:} \code{ESP32/ipfs/esp32\_ipfs/esp32\_ipfs.ino} and
+  \code{Broker/ESP32/IPFS/broker\_ipfs.py}.
+
+\end{enumerate}
+
+\end{document}
