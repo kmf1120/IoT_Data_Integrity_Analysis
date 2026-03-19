@@ -8,19 +8,21 @@
 # Expected MQTT payload (from pi5_cbhv.py):
 #   [chunk_data (variable)] [seq_num (4)] [hash_time_us (4)] [upload_latency_us (4)]
 #
-# Output files per run:
-#   verified_stream_<n>.h264      — reassembled video (verified chunks only)
-#   raw_packet_data_<n>.csv       — per-chunk detail log
-#   benchmark_summary_<n>.csv     — single-row run summary
+# Output files per run (now stress-labelled):
+#   verified_stream_<stress>_<run>.h264
+#   raw_packet_data_<stress>_<run>.csv
+#   benchmark_summary_<stress>_<run>.csv
+
+import argparse
+import csv
+import datetime
+import hashlib
+import os
+import statistics
+import struct
+import time
 
 import paho.mqtt.client as mqtt
-import struct
-import hashlib
-import csv
-import os
-import time
-import statistics
-import datetime
 import requests
 
 # --- CONFIGURATION ---
@@ -39,24 +41,29 @@ FETCH_RETRY_DELAY_S = 0.1   # 100 ms between retries
 # Sentinel written by Pi when its Firebase upload failed
 UPLOAD_FAILED_SENTINEL = 0xFFFFFFFF
 
+# --- ARGUMENTS: STRESS LABEL FOR FILENAMES ---
+parser = argparse.ArgumentParser(description="CBHV broker with stress-labelled output filenames.")
+parser.add_argument(
+    "-s",
+    "--stress",
+    type=int,
+    default=0,
+    help="CPU load percentage label (0, 25, 50, 75, 99, etc.) used only to tag output filenames.",
+)
+args = parser.parse_args()
+
+STRESS_LABEL = f"stress{args.stress}" if args.stress > 0 else "stress0"
+
 # --- FILE SETUP ---
 current_dir = r"C:\Users\green\Documents\Senior_Project_Repo\Broker\Pi5\CBHV\results"
 os.makedirs(current_dir, exist_ok=True)
 
-def get_run_id(directory):
-    run_id = 1
-    while True:
-        v = os.path.exists(os.path.join(directory, f"verified_stream_{run_id}.h264"))
-        r = os.path.exists(os.path.join(directory, f"raw_packet_data_{run_id}.csv"))
-        s = os.path.exists(os.path.join(directory, f"benchmark_summary_{run_id}.csv"))
-        if not (v or r or s):
-            return run_id
-        run_id += 1
+RUN_ID = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+BASE_NAME = f"{STRESS_LABEL}_{RUN_ID}"
 
-RUN_ID       = get_run_id(current_dir)
-VIDEO_FILE   = os.path.join(current_dir, f"verified_stream_{RUN_ID}.h264")
-RAW_LOG_FILE = os.path.join(current_dir, f"raw_packet_data_{RUN_ID}.csv")
-SUMMARY_FILE = os.path.join(current_dir, f"benchmark_summary_{RUN_ID}.csv")
+VIDEO_FILE   = os.path.join(current_dir, f"verified_stream_{BASE_NAME}.h264")
+RAW_LOG_FILE = os.path.join(current_dir, f"raw_packet_data_{BASE_NAME}.csv")
+SUMMARY_FILE = os.path.join(current_dir, f"benchmark_summary_{BASE_NAME}.csv")
 
 video_file = open(VIDEO_FILE, "wb")
 
@@ -68,7 +75,7 @@ fetch_latencies   = []
 verify_times      = []
 failures          = 0
 
-print(f"--- CBHV BENCHMARK RUN #{RUN_ID} READY ---")
+print(f"--- CBHV BENCHMARK RUN {RUN_ID} READY ({STRESS_LABEL}) ---")
 print(f"Directory:    {current_dir}")
 print(f"Firebase URL: {FIREBASE_URL}")
 print(f"Waiting for stream on '{TOPIC}'...")
@@ -170,7 +177,7 @@ def on_message(client, userdata, msg):
 # FINALIZE
 # ---------------------------------------------------------------------------
 def finalize_benchmark():
-    print(f"\n{'='*20} RUN {RUN_ID} COMPLETE {'='*20}")
+    print(f"\n{'='*20} RUN {RUN_ID} COMPLETE ({STRESS_LABEL}) {'='*20}")
     video_file.close()
 
     if not metrics_buffer:
@@ -203,13 +210,14 @@ def finalize_benchmark():
     with open(SUMMARY_FILE, "w", newline='') as f:
         writer = csv.writer(f)
         writer.writerow([
-            "Run_ID", "Timestamp", "Total_Chunks", "Success_Rate",
+            "Run_ID", "Stress_Label", "Timestamp", "Total_Chunks", "Success_Rate",
             "Avg_Hash_uS", "Max_Hash_uS",
             "Avg_Upload_uS", "Avg_Fetch_uS", "Max_Fetch_uS",
             "Avg_Verify_uS", "Max_Verify_uS"
         ])
         writer.writerow([
             RUN_ID,
+            STRESS_LABEL,
             datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             total_chunks,
             f"{success_rate:.2f}%",
@@ -225,7 +233,7 @@ def finalize_benchmark():
     print(f"Avg Upload:        {avg_upload:.2f} us  ({avg_upload/1000:.2f} ms)")
     print(f"Avg Fetch:         {avg_fetch:.2f} us  ({avg_fetch/1000:.2f} ms)")
     print(f"Avg Verify:        {avg_verify:.2f} us")
-    print(f"Results saved as run #{RUN_ID} in results folder.")
+    print(f"Results saved with base name: {BASE_NAME}")
 
     try:
         os.startfile(current_dir)

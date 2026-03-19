@@ -1,0 +1,2 @@
+Run_ID,Stress_Label,Timestamp,Total_Chunks,Success_Rate,Avg_Hash_uS,Max_Hash_uS,Avg_Upload_uS,Avg_Fetch_uS,Max_Fetch_uS,Avg_Verify_uS,Max_Verify_uS
+20260319_185807,stress50,2026-03-19 18:59:24,121,100.00%,40.01,1388,182026.13,603277.78,676152,11.23,21
