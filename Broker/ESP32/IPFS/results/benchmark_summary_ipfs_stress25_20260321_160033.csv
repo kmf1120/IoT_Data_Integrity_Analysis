@@ -1,0 +1,2 @@
+Run_ID,Timestamp,Validation_Mode,Warmup_Seconds,Messages_Received_Total,Warmup_Skipped,Total_Chunks,Success_Rate,Missing_Sequence_Estimate,OutOfOrder_Estimate,Avg_Device_uS,Max_Device_uS,Avg_Hash_uS,Max_Hash_uS,P50_Hash_uS,P95_Hash_uS,P99_Hash_uS,Avg_Verify_uS,Max_Verify_uS,P50_Verify_uS,P95_Verify_uS,P99_Verify_uS
+20260321_160033,2026-03-21 16:02:56,double_hash,30,1282,267,1014,100.00%,0,1281,442.81,531,56000.33,70276.90,55855.60,58406.70,59971.50,55825.88,63047.80,55686.40,58268.00,59924.30

@@ -11,18 +11,21 @@
 #   Entry, Message, SeqNum, HashTime_uS, UploadLatency_uS,
 #   FetchLatency_uS, VerifyTime_uS, Valid
 
-import paho.mqtt.client as mqtt
-import struct
-import hashlib
+import argparse
 import csv
+import datetime
+import hashlib
 import os
+import struct
 import time
+
+import paho.mqtt.client as mqtt
 import requests
 
 # --- CONFIGURATION ---
 MQTT_BROKER = "localhost"
 TOPIC       = "therm/cbhv"
-MAX_LOGS    = 10000
+MAX_LOGS    = 200
 
 # Firebase Realtime Database URL (no trailing slash).
 # Must match FIREBASE_URL in esp32_cbhv.ino.
@@ -35,23 +38,33 @@ FETCH_RETRY_DELAY_S = 0.1   # 100 ms between retries
 # Sentinel written by ESP32 when its Firebase upload failed
 UPLOAD_FAILED_SENTINEL = 0xFFFFFFFF
 
+# --- ARGUMENTS: STRESS LABEL FOR FILENAMES ---
+parser = argparse.ArgumentParser(description="ESP32 CBHV broker with stress-labelled output.")
+parser.add_argument(
+    "-s",
+    "--stress",
+    type=int,
+    default=0,
+    help="CPU/load label (0, 25, 50, 75, 99, etc.) used only to tag output filenames.",
+)
+args = parser.parse_args()
+
+STRESS_LABEL = f"stress{args.stress}" if args.stress > 0 else "stress0"
+
 # --- FILE SETUP ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
 results_dir = os.path.join(current_dir, "results")
 os.makedirs(results_dir, exist_ok=True)
 
-base_filename = "benchmark_cbhv_results"
-extension     = ".csv"
-counter       = 1
-while os.path.exists(os.path.join(results_dir, f"{base_filename}_{counter}{extension}")):
-    counter += 1
-log_file_path = os.path.join(results_dir, f"{base_filename}_{counter}{extension}")
+run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+log_file_path = os.path.join(results_dir, f"benchmark_cbhv_{STRESS_LABEL}_{run_id}.csv")
 
 results_buffer = []
 failures       = 0
 
 print(f"Logging to:    {log_file_path}")
 print(f"Firebase URL:  {FIREBASE_URL}")
+print(f"Stress label:  {STRESS_LABEL}")
 print(f"Ready. Listening for {MAX_LOGS} messages on '{TOPIC}'...")
 
 

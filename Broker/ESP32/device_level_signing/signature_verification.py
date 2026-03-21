@@ -1,25 +1,45 @@
-import paho.mqtt.client as mqtt
-import struct
+import argparse
 import csv
+import datetime
 import os
+import struct
 import time
+
+import paho.mqtt.client as mqtt
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
 
 # --- CONFIGURATION ---
 MQTT_BROKER = "localhost" 
 TOPIC = "therm"
-MAX_LOGS = 10000
+MAX_LOGS = 3000
+
+# --- ARGUMENTS: STRESS LABEL FOR FILENAMES ---
+parser = argparse.ArgumentParser(description="ESP32 device-level signing verifier with stress-labelled output.")
+parser.add_argument(
+    "-s",
+    "--stress",
+    type=int,
+    default=0,
+    help="CPU/network load label (0, 25, 50, 75, 99, etc.) used only to tag output filenames.",
+)
+args = parser.parse_args()
+
+STRESS_LABEL = f"stress{args.stress}" if args.stress > 0 else "stress0"
 
 # File Setup
 current_dir = os.path.dirname(os.path.abspath(__file__))
-log_file_path = os.path.join(current_dir, "benchmark_results.csv")
+results_dir = os.path.join(current_dir, "results")
+os.makedirs(results_dir, exist_ok=True)
+
+run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+log_file_path = os.path.join(results_dir, f"benchmark_esp32_sign_{STRESS_LABEL}_{run_id}.csv")
 
 # Memory Buffer
 results_buffer = []
 failures = 0
 
-print(f"Ready. Listening for 10k messages on topic '{TOPIC}'...")
+print(f"Ready. Listening for {MAX_LOGS} messages on topic '{TOPIC}' ({STRESS_LABEL})...")
 
 def on_message(client, userdata, msg):
     global failures

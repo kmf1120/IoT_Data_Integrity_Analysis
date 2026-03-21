@@ -16,8 +16,9 @@
   #define DEBUG_PRINTLN(x)
 #endif
 
-#define STRESS_ENABLED 1
-#define STRESS_CORE 0
+// --- STRESS CONFIG: ~99% CPU load on STRESS_CORE ---
+#define STRESS_ENABLED 1   // 0 = disabled, 1 = enabled (~99% CPU)
+#define STRESS_CORE 0      // Core 0 handles WiFi, Core 1 handles Arduino loop
 
 const char* ssid = SECRET_SSID;
 const char* password = SECRET_PASS;
@@ -37,14 +38,25 @@ unsigned long lastPublish = 0;
 
 void reconnectMQTT();
 
+// --- STRESS TASK (~99% CPU duty cycle approximation) ---
 void stressTask(void * pvParameters) {
-  volatile float x = 1.5;
+  volatile float x = 1.5f;
+  const TickType_t busyTicks = 99;  // ticks spent busy
+  const TickType_t idleTicks = 1;   // ticks sleeping -> ~99% duty overall
+
   while (true) {
-    for (int i = 0; i < 1000; i++) {
-      x = sqrt(x * 3.14159 / 2.71828);
-      if (x > 1000.0 || x < 0.1) x = 1.5;
+    TickType_t startTick = xTaskGetTickCount();
+
+    // Busy loop for approximately busyTicks worth of work
+    while (xTaskGetTickCount() - startTick < busyTicks) {
+      for (int i = 0; i < 500; i++) {
+        x = sqrtf(x * 3.14159f / 2.71828f);
+        if (x > 1000.0f || x < 0.1f) x = 1.5f;
+      }
     }
-    vTaskDelay(1);
+
+    // Sleep for the remaining portion of the cycle
+    vTaskDelay(idleTicks);
   }
 }
 

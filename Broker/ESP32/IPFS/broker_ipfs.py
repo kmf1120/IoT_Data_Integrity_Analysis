@@ -1,3 +1,4 @@
+import argparse
 import csv
 import datetime
 import os
@@ -33,6 +34,20 @@ REPUBLISH_QOS = 1
 
 IPFS_EXE = r"C:\Users\green\kubo\kubo\ipfs.exe"
 
+# --- ARGUMENTS: STRESS LABEL FOR FILENAMES ---
+parser = argparse.ArgumentParser(description="ESP32 IPFS broker with stress-labelled output.")
+parser.add_argument(
+    "-s",
+    "--stress",
+    type=int,
+    default=0,
+    help="CPU/load label (0, 25, 50, 75, 99, etc.) used only to tag output filenames.",
+)
+args = parser.parse_args()
+
+STRESS_LABEL = f"stress{args.stress}" if args.stress > 0 else "stress0"
+
+
 CURRENT_DIR = os.path.join(
     r"C:\Users\green\Documents\Senior_Project_Repo\Broker\ESP32\IPFS",
     "results",
@@ -40,19 +55,9 @@ CURRENT_DIR = os.path.join(
 os.makedirs(CURRENT_DIR, exist_ok=True)
 
 
-def get_global_run_id(directory):
-    run_id = 1
-    while True:
-        raw_exists = os.path.exists(os.path.join(directory, f"raw_packet_data_{run_id}.csv"))
-        summary_exists = os.path.exists(os.path.join(directory, f"benchmark_summary_{run_id}.csv"))
-        if not (raw_exists or summary_exists):
-            return run_id
-        run_id += 1
-
-
-RUN_ID = get_global_run_id(CURRENT_DIR)
-RAW_LOG_FILE = os.path.join(CURRENT_DIR, f"raw_packet_data_{RUN_ID}.csv")
-SUMMARY_FILE = os.path.join(CURRENT_DIR, f"benchmark_summary_{RUN_ID}.csv")
+RUN_ID = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+RAW_LOG_FILE = os.path.join(CURRENT_DIR, f"raw_packet_data_ipfs_{STRESS_LABEL}_{RUN_ID}.csv")
+SUMMARY_FILE = os.path.join(CURRENT_DIR, f"benchmark_summary_ipfs_{STRESS_LABEL}_{RUN_ID}.csv")
 
 # metrics_buffer row:
 # [Chunk_ID, Sequence_ID, Size_Bytes, DeviceTime_uS, HashTime_uS, VerifyTime_uS, CID_Valid, Published]
@@ -68,7 +73,7 @@ missing_sequence_count = 0
 out_of_order_count = 0
 benchmark_start_monotonic = time.monotonic()
 
-print(f"--- BENCHMARK RUN #{RUN_ID} READY (ESP32 -> REAL IPFS) ---")
+print(f"--- BENCHMARK RUN {RUN_ID} READY (ESP32 -> REAL IPFS, {STRESS_LABEL}) ---")
 print(f"Directory: {CURRENT_DIR}")
 print(f"Input topic : {TOPIC_RAW_IN}")
 print(f"Output topic: {TOPIC_IPFS_OUT}")
