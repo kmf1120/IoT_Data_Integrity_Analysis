@@ -13,6 +13,10 @@ import time
 import argparse
 import struct
 import hashlib
+import subprocess
+import signal
+import os
+
 import requests
 import paho.mqtt.client as mqtt
 from rpi_ws281x import *
@@ -31,12 +35,46 @@ MQTT_BROKER = "laptop.local"   # <--- CHANGE THIS TO YOUR LAPTOP HOSTNAME OR IP
 MQTT_TOPIC  = "light/cbhv"
 
 # --- FIREBASE CONFIGURATION ---
-# Paste your Realtime Database URL here (no trailing slash).
-# Example: "https://my-project-default-rtdb.firebaseio.com"
-FIREBASE_URL = "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com"
+# Realtime Database URL for your Firebase project (no trailing slash).
+# Must match the URL used by the CBHV broker.
+FIREBASE_URL = "https://senior-project-bdb33-default-rtdb.firebaseio.com"
 
 # Sentinel value packed into upload_latency_us when a Firebase upload fails.
 UPLOAD_FAILED_SENTINEL = 0xFFFFFFFF
+
+# --- STRESS TESTING SETUP ---
+stress_process = None
+
+
+def start_stress_test(cpu_load: int) -> None:
+    """Starts stress-ng in the background at the requested CPU load."""
+    global stress_process
+    if cpu_load <= 0:
+        print("--- STRESS DISABLED (0%) ---")
+        return
+
+    print(f"--- STARTING STRESS TEST: {cpu_load}% CPU LOAD ---")
+    cmd = [
+        "stress-ng",
+        "--cpu",
+        "4",
+        "--cpu-load",
+        str(cpu_load),
+        "--quiet",
+    ]
+    stress_process = subprocess.Popen(cmd, preexec_fn=os.setsid)
+
+
+def stop_stress_test() -> None:
+    """Cleanly terminates the stress-ng process."""
+    global stress_process
+    if stress_process is not None:
+        print("--- STOPPING STRESS TEST ---")
+        try:
+            os.killpg(os.getpgid(stress_process.pid), signal.SIGTERM)
+        except Exception:
+            pass
+        stress_process = None
 
 # ---------------------------------------------------------------------------
 # MQTT SETUP
@@ -181,11 +219,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--clear', action='store_true',
                         help='clear the display on exit')
+    parser.add_argument('-s', '--stress', type=int, default=0,
+                        help='CPU load percentage for stress-ng (0-100)')
     args = parser.parse_args()
 
     strip = Adafruit_NeoPixel(LED_COUNT, LED_PIN, LED_FREQ_HZ,
                                LED_DMA, LED_INVERT, LED_BRIGHTNESS, LED_CHANNEL)
     strip.begin()
+
+    # Start CPU stress if requested
+    start_stress_test(cpu_load=args.stress)
 
     print('Press Ctrl-C to quit.')
     if not args.clear:
@@ -211,3 +254,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         if args.clear:
             colorWipe(strip, Color(0, 0, 0), 10)
+    finally:
+        stop_stress_test()

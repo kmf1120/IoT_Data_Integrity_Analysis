@@ -11,18 +11,21 @@
 #   Entry, MessageHex, SeqNum, HashTime_uS, UploadLatency_uS,
 #   FetchLatency_uS, VerifyTime_uS, Valid
 
-import paho.mqtt.client as mqtt
-import struct
-import hashlib
+import argparse
 import csv
+import datetime
+import hashlib
 import os
+import struct
 import time
+
+import paho.mqtt.client as mqtt
 import requests
 
 # --- CONFIGURATION ---
 MQTT_BROKER = "localhost"          # Broker runs on this machine
 TOPIC       = "light/cbhv"
-MAX_LOGS    = 5000
+MAX_LOGS    = 500
 
 # Paste your Firebase Realtime Database URL here (no trailing slash).
 # Must match the FIREBASE_URL in pi3_cbhv.py.
@@ -36,17 +39,27 @@ FETCH_RETRY_DELAY_S = 0.1   # 100 ms between retries
 # Sentinel written by Pi when its Firebase upload failed
 UPLOAD_FAILED_SENTINEL = 0xFFFFFFFF
 
+# --- ARGUMENTS: STRESS LABEL FOR FILENAMES ---
+parser = argparse.ArgumentParser(description="Pi 3 CBHV broker with stress-labelled output.")
+parser.add_argument(
+    "-s",
+    "--stress",
+    type=int,
+    default=0,
+    help="CPU load percentage label (0, 25, 50, 75, 99, etc.) used only to tag output filenames.",
+)
+args = parser.parse_args()
+
+STRESS_LABEL = f"stress{args.stress}" if args.stress > 0 else "stress0"
+
 # --- FILE SETUP ---
 current_dir   = os.path.dirname(os.path.abspath(__file__))
 results_dir   = os.path.join(current_dir, "results")
 os.makedirs(results_dir, exist_ok=True)
 
-base_filename = "benchmark_cbhv_results"
-extension     = ".csv"
-counter       = 1
-while os.path.exists(os.path.join(results_dir, f"{base_filename}_{counter}{extension}")):
-    counter += 1
-log_file_path = os.path.join(results_dir, f"{base_filename}_{counter}{extension}")
+RUN_ID = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+base_filename = f"benchmark_cbhv_{STRESS_LABEL}_{RUN_ID}.csv"
+log_file_path = os.path.join(results_dir, base_filename)
 
 results_buffer = []
 failures       = 0
@@ -184,6 +197,7 @@ def finalize_benchmark(client):
     print(f"Avg Upload Latency:    {avg_upload:.2f} us  ({avg_upload/1000:.2f} ms)")
     print(f"Avg Fetch Latency:     {avg_fetch:.2f} us  ({avg_fetch/1000:.2f} ms)")
     print(f"Avg Verify Time:       {avg_verify:.2f} us")
+    print(f"Stress label:          {STRESS_LABEL}")
     print(f"Results saved to:      {log_file_path}")
 
     client.disconnect()

@@ -1,8 +1,11 @@
-import paho.mqtt.client as mqtt
-import struct
+import argparse
 import csv
+import datetime
 import os
+import struct
 import time
+
+import paho.mqtt.client as mqtt
 from nacl.signing import VerifyKey
 from nacl.exceptions import BadSignatureError
 
@@ -13,18 +16,26 @@ MQTT_BROKER = "localhost"
 TOPIC = "light"
 MAX_LOGS = 5000 
 
-# File Setup
+# --- ARGUMENTS: STRESS LABEL FOR FILENAMES ---
+parser = argparse.ArgumentParser(description="Pi 3 LED signing broker with stress-labelled output.")
+parser.add_argument(
+    "-s",
+    "--stress",
+    type=int,
+    default=0,
+    help="CPU load percentage label (0, 25, 50, 75, 99, etc.) used only to tag output filenames.",
+)
+args = parser.parse_args()
+
+STRESS_LABEL = f"stress{args.stress}" if args.stress > 0 else "stress0"
+
 # --- FILE SETUP ---
-current_dir = os.path.dirname(os.path.abspath(__file__))
-base_filename = "benchmark_pi_results"
-extension = ".csv"
-counter = 1
+current_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "results")
+os.makedirs(current_dir, exist_ok=True)
 
-# Increment counter until we find a filename that doesn't exist
-while os.path.exists(os.path.join(current_dir, f"{base_filename}_{counter}{extension}")):
-    counter += 1
-
-log_file_path = os.path.join(current_dir, f"{base_filename}_{counter}{extension}")
+RUN_ID = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+base_filename = f"benchmark_pi_sign_{STRESS_LABEL}_{RUN_ID}.csv"
+log_file_path = os.path.join(current_dir, base_filename)
 
 results_buffer = []
 failures = 0
